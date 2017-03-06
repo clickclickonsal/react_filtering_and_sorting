@@ -1,13 +1,27 @@
+var FilterList = React.createClass({
+  render: function() {
+    var self = this;
+
+    var filters = this.props.options.map(function (option, index) {
+      return (
+        <button key={option + index} onClick={function () { self.props.changeFilterBy(option) }}>{option}</button>
+      );
+    });
+
+    return (
+      <ul className="options">
+        {filters}
+      </ul>
+    );
+  }
+});
+
 var FilterComponent = React.createClass({
   render: function() {
     return (
       <div>
-        <input onClick={this.props.filterBy} placeHolder="Number" />
-        <input onClick={this.props.filterBy} placeHolder="Name" />
-        <input onClick={this.props.filterBy} placeHolder="Classification" />
-        <input onClick={this.props.filterBy} placeHolder="FleeRate" />
-        <input onClick={this.props.filterBy} placeHolder="MaxCP" />
-        <input onClick={this.props.filterBy} placeHolder="MaxHP" />
+        <FilterList changeFilterBy={this.props.changeFilterBy} options={['Number', 'Name', 'Classification', 'FleeRate', 'MaxCP', 'MaxHP']} />
+        <input placeholder="Text yo!" onChange={this.props.changeText} />
       </div>
     );
   }
@@ -78,20 +92,69 @@ var PokemonContainer = React.createClass({
     return {
       offset: 0,
       limit: 10,
-      filterBy: ''
+      filterBy: '',
+      filterText: '',
+      pokemonData: this.props.pokemonData
     };
   },
-  handleLimitChange: function(e) {
-    this.setState({author: e.target.value});
+  changeFilterBy: function(option) {
+    this.setState({filterBy: option});
   },
-  handleFilterByChange: function(e) {
-    this.setState({text: e.target.value});
+  changeText: function (e) {
+    this.setState({filterText: e.target.value})
+    // this.handleFiltering();
+  },
+  handleFiltering: function () {
+    if (this.state.filterBy) {
+      var filteredData = this.props.pokemonData.filter((pokemon, index) => {
+        if (String(pokemon[this.state.filterBy]).toLowerCase().includes(this.state.filterText.toLowerCase())) {
+          return pokemon;
+        }
+      });
+
+      this.setState({pokemonData: filteredData});
+    } else {
+      alert('I need a FilterBY!!!!!');
+    }
+  },
+  handleSort: function (asc) {
+    var sortedData = this.props.pokemonData.sort((a, b) => {
+      var nameA = String(a[this.state.filterBy]).toLowerCase(); // ignore upper and lowercase
+        var nameB = String(b[this.state.filterBy]).toLowerCase(); // ignore upper and lowercase
+        if (asc) {
+          if (nameA < nameB) {
+            return -1;
+          }
+          if (nameA > nameB) {
+            return 1;
+          }
+        } else {
+          if (nameA > nameB) {
+            return -1;
+          }
+          if (nameA < nameB) {
+            return 1;
+          }
+        }
+
+        // names must be equal
+        return 0;
+    });
+
+    this.setState({pokemonData: sortedData});
   },
   render: function() {
+    var self = this;
+
     return (
       <div>
-        <FilterComponent filterBy={this.state.filterBy} />
-        <PokemonList pokemonData={this.props.pokemonData} />
+        <div>Filter By: {this.state.filterBy}</div>
+        {this.state.filterText && <div>Filtering on: {this.state.filterText}</div>}
+        <FilterComponent changeText={this.changeText} changeFilterBy={this.changeFilterBy} />
+        <button onClick={this.handleFiltering}>Filter my data Please!</button>
+        <button onClick={function () { self.handleSort(true)}}>Sort Asc</button>
+        <button onClick={function () { self.handleSort(false)}}>Sort Desc</button>
+        <PokemonList pokemonData={this.state.pokemonData} handleFilter={this.props.handleFilter} />
       </div>
     );
   }
